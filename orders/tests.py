@@ -1,11 +1,13 @@
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
 from account.models import Address, User
 from cart.models import Cart, CartItem
 from shop.models import Category, Product
+from payments.models import Payment
 
 from . import selectors
 from .models import Order, OrderItem, ShippingMethod
@@ -61,6 +63,12 @@ class OrderViewTests(TestCase):
         }
         data.update(overrides)
         return data
+
+    def test_tax_uses_financial_half_up_rounding(self):
+        self.assertEqual(
+            selectors.calculate_tax(Decimal('0.05')),
+            Decimal('0.01'),
+        )
 
     def test_order_views_require_login(self):
         urls = (
@@ -120,14 +128,16 @@ class OrderViewTests(TestCase):
         )
         self.assertEqual(order.items.get().unit_price, Decimal('100.00'))
         self.assertEqual(order.shipping_cost, Decimal('20.00'))
+        self.assertEqual(order.tax_amount, Decimal('20.00'))
         self.assertEqual(
             order.items.get().unit_price * order.items.get().quantity
+            + order.tax_amount
             + order.shipping_cost,
-            Decimal('220.00'),
+            Decimal('240.00'),
         )
         self.assertEqual(
             selectors.get_order_payable_amount(self.user, order.pk),
-            Decimal('220.00'),
+            Decimal('240.00'),
         )
 
     def test_empty_cart_does_not_create_order(self):
@@ -341,3 +351,74 @@ class OrderViewTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 405)
+
+    def test_order_cannot_process_before_successful_payment(self):
+        order = Order.objects.create(user=self.user, address=self.address)
+
+        with self.assertRaises(ValidationError):
+            selectors.change_order_status_by_admin(
+                order.pk,
+                Order.Status.PROCESSING,
+            )
+
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.PENDING)
+
+    def test_order_follows_the_valid_status_path(self):
+        order = Order.objects.create(user=self.user, address=self.address)
+        Payment.objects.create(
+            order=order,
+            user=self.user,
+            gateway=Payment.Gateway.TEST,
+            status=Payment.Status.PAID,
+            amount='100.00',
+        )
+
+        selectors.change_order_status_by_admin(
+            order.pk,
+            Order.Status.PROCESSING,
+        )
+        selectors.change_order_status_by_admin(
+            order.pk,
+            Order.Status.SHIPPED,
+        )
+        selectors.change_order_status_by_admin(
+            order.pk,
+            Order.Status.DELIVERED,
+        )
+
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.DELIVERED)
+
+    def test_order_cannot_skip_or_move_back_between_statuses(self):
+        order = Order.objects.create(user=self.user, address=self.address)
+
+        with self.assertRaises(ValidationError):
+            selectors.change_order_status_by_admin(
+                order.pk,
+                Order.Status.SHIPPED,
+            )
+
+        order.status = Order.Status.SHIPPED
+        order.save(update_fields=('status',))
+        with self.assertRaises(ValidationError):
+            selectors.change_order_status_by_admin(
+                order.pk,
+                Order.Status.PROCESSING,
+            )
+
+    def test_canceled_order_is_a_terminal_status(self):
+        order = Order.objects.create(
+            user=self.user,
+            address=self.address,
+            status=Order.Status.CANCELED,
+        )
+
+        with self.assertRaises(ValidationError):
+            selectors.change_order_status_by_admin(
+                order.pk,
+                Order.Status.PROCESSING,
+            )
+
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.CANCELED)

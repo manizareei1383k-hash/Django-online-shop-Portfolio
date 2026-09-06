@@ -39,9 +39,30 @@
 
 <section class="panel">
     <p>مبلغ محصولات: {{ subtotal }} تومان</p>
+    <p>مالیات: {{ tax_amount }} تومان</p>
     <p>هزینه ارسال: {{ shipping_cost }} تومان</p>
     <p class="price">مبلغ کل: {{ total_price }} تومان</p>
+    {% if latest_payment %}
+        <p>وضعیت آخرین پرداخت: {{ latest_payment.get_status_display }}</p>
+        {% if latest_payment.refund_reference %}
+            <p>شماره پیگیری بازگشت وجه: {{ latest_payment.refund_reference }}</p>
+        {% endif %}
+    {% endif %}
+    {% if invoice %}
+        <a class="button" href="{% url 'invoices:detail' invoice.number %}">مشاهده فاکتور</a>
+    {% endif %}
     {% if order.status == 'pending' %}
+        <form method="post" action="{% url 'payments:start' order.pk %}">
+            {% csrf_token %}
+            <label for="gateway">روش پرداخت</label>
+            <select id="gateway" name="gateway">
+                <option value="wallet">کیف پول</option>
+                {% if test_gateway_enabled %}
+                    <option value="test">درگاه آزمایشی</option>
+                {% endif %}
+            </select>
+            <button type="submit">پرداخت سفارش</button>
+        </form>
         <form method="post" action="{% url 'orders:cancel' order.pk %}">
             {% csrf_token %}
             <button class="secondary" type="submit">لغو سفارش</button>

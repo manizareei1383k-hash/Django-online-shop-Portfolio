@@ -1,0 +1,7 @@
+{% extends 'management_panel/base.html' %}
+{% block management_content %}
+<section class="panel"><h2>{{ ticket.subject }}</h2><p>کاربر: {{ ticket.user }}</p><form method="post">{% csrf_token %}<input type="hidden" name="action" value="update">{{ manage_form.as_p }}<button>ذخیره وضعیت</button></form></section>
+<section class="panel"><h3>پیام‌ها</h3>{% for item in ticket.messages.all %}<article class="ticket-message"><strong>{{ item.sender|default:'سیستم' }}</strong><p>{{ item.message }}</p></article>{% empty %}<p>پیامی وجود ندارد.</p>{% endfor %}</section>
+<section class="panel"><h3>پاسخ ادمین</h3><form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="reply">{{ reply_form.as_p }}<button>ارسال پاسخ</button></form></section>
+{% endblock %}
+

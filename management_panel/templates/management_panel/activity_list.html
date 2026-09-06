@@ -1,0 +1,45 @@
+{% extends 'management_panel/base.html' %}
+
+{% block management_content %}
+<section class="panel">
+    <h2>فعالیت ادمین‌ها</h2>
+    <form method="get">
+        <select name="action">
+            <option value="">همه فعالیت‌ها</option>
+            {% for value, label in actions %}
+                <option value="{{ value }}" {% if selected_action == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">فیلتر</button>
+    </form>
+</section>
+
+<section class="panel table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>زمان</th>
+                <th>ادمین</th>
+                <th>عملیات</th>
+                <th>هدف</th>
+                <th>توضیحات</th>
+                <th>IP</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for activity in activities %}
+                <tr>
+                    <td>{{ activity.created_at }}</td>
+                    <td>{{ activity.admin|default:'ادمین حذف‌شده' }}</td>
+                    <td>{{ activity.get_action_display }}</td>
+                    <td>{{ activity.target_label }} ({{ activity.target_type }} #{{ activity.target_id }})</td>
+                    <td>{{ activity.description|default:'-' }}</td>
+                    <td>{{ activity.ip_address|default:'-' }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6">فعالیتی ثبت نشده است.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends 'management_panel/base.html' %}
+{% block management_content %}
+<section class="panel"><h2>سفارش‌ها</h2><form method="get"><select name="status"><option value="">همه وضعیت‌ها</option>{% for value,label in statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button>فیلتر</button></form></section>
+<section class="panel table-wrap"><table><thead><tr><th>شماره</th><th>کاربر</th><th>وضعیت</th><th>ارسال</th><th>تاریخ</th><th></th></tr></thead><tbody>{% for order in orders %}<tr><td>{{ order.pk }}</td><td>{{ order.user }}</td><td>{{ order.get_status_display }}</td><td>{{ order.shipping_method|default:'-' }}</td><td>{{ order.created_at }}</td><td><a href="{% url 'management_panel:order_detail' order.pk %}">مدیریت</a></td></tr>{% empty %}<tr><td colspan="6">سفارشی وجود ندارد.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}
+

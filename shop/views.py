@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.views import redirect_to_login
 from django.shortcuts import redirect, render
 
 from account.decorators import admin_required
@@ -17,8 +18,12 @@ def shop(request):
 
 
 def product_detail(request, pk):
+    if request.method == 'POST' and not request.user.is_authenticated:
+        return redirect_to_login(request.get_full_path())
+
     data = request.POST if request.method == 'POST' else None
-    context = selectors.get_product_detail_context(pk, data)
+    user = request.user if request.user.is_authenticated else None
+    context = selectors.get_product_detail_context(pk, user=user, data=data)
 
     if context.pop('review_saved'):
         messages.success(request, 'نظر شما با موفقیت ثبت شد.')

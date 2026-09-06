@@ -1,0 +1,6 @@
+{% extends 'management_panel/base.html' %}
+{% block management_content %}
+<section class="panel"><div class="actions"><h2>روش‌های ارسال</h2><a class="button" href="{% url 'management_panel:shipping_create' %}">افزودن روش ارسال</a></div></section>
+<section class="panel table-wrap"><table><thead><tr><th>نام</th><th>هزینه</th><th>زمان تحویل</th><th>فعال</th><th>عملیات</th></tr></thead><tbody>{% for item in shipping_methods %}<tr><td>{{ item.name }}</td><td>{{ item.price }}</td><td>{{ item.estimated_delivery_days }} روز</td><td>{{ item.is_active|yesno:'بله,خیر' }}</td><td><div class="actions"><a href="{% url 'management_panel:shipping_update' item.pk %}">ویرایش</a><form method="post" action="{% url 'management_panel:shipping_delete' item.pk %}">{% csrf_token %}<button class="secondary">حذف</button></form></div></td></tr>{% empty %}<tr><td colspan="5">روشی وجود ندارد.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}
+

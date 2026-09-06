@@ -40,7 +40,9 @@
             {% csrf_token %}
             {{ form.as_p }}
             <p>مبلغ محصولات: <strong>{{ subtotal }} تومان</strong></p>
+            <p>مالیات (۱۰٪): {{ tax_amount }} تومان</p>
             {% if shipping_cost %}<p>هزینه ارسال انتخاب‌شده: {{ shipping_cost }} تومان</p>{% endif %}
+            <p class="price">مبلغ نهایی: {{ total_price }} تومان</p>
             <button type="submit">ثبت نهایی سفارش</button>
         </form>
     {% endif %}

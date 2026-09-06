@@ -1,0 +1,7 @@
+{% extends 'management_panel/base.html' %}
+{% block management_content %}
+<section class="panel"><h2>سفارش شماره {{ order.pk }}</h2><p>کاربر: {{ order.user }}</p><p>آدرس: {{ order.address }}</p><p>وضعیت: {{ order.get_status_display }}</p><p>جمع کل: {{ totals.total_price }} تومان</p>
+{% if order.status != 'canceled' %}<form method="post">{% csrf_token %}{{ form.as_p }}<button>تغییر وضعیت</button></form><form method="post" action="{% url 'management_panel:order_cancel' order.pk %}">{% csrf_token %}<button class="secondary">لغو سفارش در این مرحله</button></form>{% endif %}</section>
+<section class="panel table-wrap"><table><thead><tr><th>محصول</th><th>قیمت واحد</th><th>تعداد</th><th>جمع</th></tr></thead><tbody>{% for line in totals.lines %}<tr><td>{{ line.item.product }}</td><td>{{ line.item.unit_price }}</td><td>{{ line.item.quantity }}</td><td>{{ line.total_price }}</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}
+

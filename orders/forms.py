@@ -27,9 +27,33 @@ class OrderItemForm(forms.ModelForm):
 
 
 class OrderStatusForm(forms.ModelForm):
+    def clean_status(self):
+        status = self.cleaned_data['status']
+        if self.instance.pk:
+            from .selectors import validate_admin_status_transition
+
+            current_order = Order.objects.get(pk=self.instance.pk)
+            validate_admin_status_transition(current_order, status)
+        return status
+
     class Meta:
         model = Order
         fields = ('status',)
+
+
+class OrderAdminForm(forms.ModelForm):
+    def clean_status(self):
+        status = self.cleaned_data['status']
+        if self.instance.pk:
+            from .selectors import validate_admin_status_transition
+
+            current_order = Order.objects.get(pk=self.instance.pk)
+            validate_admin_status_transition(current_order, status)
+        return status
+
+    class Meta:
+        model = Order
+        fields = '__all__'
 
 
 class ShippingMethodForm(forms.ModelForm):

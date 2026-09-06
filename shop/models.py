@@ -59,6 +59,13 @@ class Message(models.Model):
 
 
 class Review(models.Model):
+    user = models.ForeignKey(
+        'account.User',
+        on_delete=models.SET_NULL,
+        related_name='reviews',
+        null=True,
+        blank=True,
+    )
     product = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
@@ -70,6 +77,25 @@ class Review(models.Model):
 
     def __str__(self):
         return f'{self.name} - {self.product.name}'
+
+
+class ReviewReply(models.Model):
+    review = models.OneToOneField(
+        Review,
+        on_delete=models.CASCADE,
+        related_name='reply',
+    )
+    responder = models.ForeignKey(
+        'account.User',
+        on_delete=models.PROTECT,
+        related_name='review_replies',
+    )
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'پاسخ به نظر #{self.review_id}'
 
 
 class ProductDiscount(models.Model):

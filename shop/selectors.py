@@ -70,10 +70,10 @@ def get_shop_context(params=None):
     }
 
 
-def get_product_detail_context(pk, data=None):
+def get_product_detail_context(pk, user=None, data=None):
     product = get_object_or_404(
         Product.objects.select_related('category').prefetch_related(
-            'reviews',
+            'reviews__reply',
             'discounts',
         ),
         pk=pk,
@@ -90,6 +90,7 @@ def get_product_detail_context(pk, data=None):
     if data is not None and review_form.is_valid():
         review = review_form.save(commit=False)
         review.product = product
+        review.user = user
         review.save()
         review_saved = True
 

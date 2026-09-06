@@ -82,7 +82,7 @@
                 <a href="{% url 'account:register' %}">ثبت‌نام</a>
             {% endif %}
             {% if request.user.is_staff %}
-                <a href="{% url 'shop:product_management' %}">مدیریت محصولات</a>
+                <a href="{% url 'management_panel:dashboard' %}">پنل مدیریت</a>
             {% endif %}
         </nav>
     </header>

@@ -54,6 +54,11 @@ class ShopViewTests(TestCase):
         self.assertTrue(Message.objects.filter(email='customer@example.com').exists())
 
     def test_review_is_connected_to_product(self):
+        user = User.objects.create_user(
+            phone_number='09120000003',
+            password='safe-password-123',
+        )
+        self.client.force_login(user)
         response = self.client.post(
             reverse('shop:product_detail', args=[self.product.pk]),
             {
@@ -69,6 +74,26 @@ class ShopViewTests(TestCase):
         )
         review = Review.objects.get(email='customer@example.com')
         self.assertEqual(review.product, self.product)
+
+    def test_anonymous_user_cannot_submit_review(self):
+        product_url = reverse('shop:product_detail', args=[self.product.pk])
+
+        response = self.client.post(
+            product_url,
+            {
+                'name': 'Anonymous',
+                'email': 'anonymous@example.com',
+                'review': 'Anonymous review',
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            f"{reverse('account:login')}?next={product_url}",
+        )
+        self.assertFalse(
+            Review.objects.filter(email='anonymous@example.com').exists()
+        )
 
     def test_anonymous_user_cannot_manage_products(self):
         response = self.client.get(reverse('shop:product_management'))

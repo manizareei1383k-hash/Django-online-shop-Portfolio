@@ -1,0 +1,6 @@
+{% extends 'management_panel/base.html' %}
+{% block management_content %}
+<section class="panel"><h2>تیکت‌ها</h2><form method="get"><select name="status"><option value="">همه</option>{% for value,label in statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button>فیلتر</button></form></section>
+<section class="panel table-wrap"><table><thead><tr><th>شماره</th><th>موضوع</th><th>کاربر</th><th>وضعیت</th><th>پیام‌ها</th><th></th></tr></thead><tbody>{% for ticket in tickets %}<tr><td>{{ ticket.pk }}</td><td>{{ ticket.subject }}</td><td>{{ ticket.user }}</td><td>{{ ticket.get_status_display }}</td><td>{{ ticket.messages_count }}</td><td><a href="{% url 'management_panel:ticket_detail' ticket.pk %}">پاسخ</a></td></tr>{% empty %}<tr><td colspan="6">تیکتی وجود ندارد.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}
+

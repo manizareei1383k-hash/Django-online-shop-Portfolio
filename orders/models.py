@@ -42,6 +42,12 @@ class Order(models.Model):
         default=0,
         editable=False,
     )
+    tax_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+        editable=False,
+    )
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -53,6 +59,12 @@ class Order(models.Model):
 
     class Meta:
         ordering = ('-created_at',)
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(tax_amount__gte=0),
+                name='order_tax_amount_is_not_negative',
+            ),
+        ]
 
     def __str__(self):
         return f'Order #{self.pk}'

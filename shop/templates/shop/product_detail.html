@@ -51,6 +51,12 @@
         <article class="review">
             <strong>{{ item.name }}</strong>
             <p>{{ item.review }}</p>
+            {% if item.reply %}
+                <div class="ticket-message">
+                    <strong>پاسخ فروشگاه</strong>
+                    <p>{{ item.reply.message }}</p>
+                </div>
+            {% endif %}
         </article>
     {% empty %}
         <p>هنوز نظری برای این محصول ثبت نشده است.</p>
@@ -59,11 +65,16 @@
 
 <section class="panel">
     <h2>ثبت نظر</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ review_form.as_p }}
-        <button type="submit">ارسال نظر</button>
-    </form>
+    {% if request.user.is_authenticated %}
+        <form method="post">
+            {% csrf_token %}
+            {{ review_form.as_p }}
+            <button type="submit">ارسال نظر</button>
+        </form>
+    {% else %}
+        <p>برای ثبت نظر ابتدا وارد حساب کاربری خود شوید.</p>
+        <a class="button" href="{% url 'account:login' %}?next={{ request.path|urlencode }}">ورود به حساب</a>
+    {% endif %}
 </section>
 
 {% if related_products %}

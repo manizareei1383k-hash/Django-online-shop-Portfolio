@@ -1,0 +1,11 @@
+{% extends 'management_panel/base.html' %}
+{% block management_content %}
+<section class="panel">
+    <div class="actions"><h2>محصولات</h2><a class="button" href="{% url 'management_panel:product_create' %}">افزودن محصول</a></div>
+    <form method="get"><input name="q" value="{{ query }}" placeholder="جست‌وجو"><button>جست‌وجو</button></form>
+</section>
+<section class="panel table-wrap"><table><thead><tr><th>محصول</th><th>دسته</th><th>قیمت</th><th>موجودی</th><th>تخفیف</th><th>عملیات</th></tr></thead><tbody>
+{% for product in products %}<tr><td>{{ product.name }}</td><td>{{ product.category }}</td><td>{{ product.price }}</td><td>{{ product.quantity }}</td><td>{% if product.active_discount %}{{ product.active_discount.percent }}٪{% else %}-{% endif %}</td><td><div class="actions"><a href="{% url 'management_panel:product_update' product.pk %}">ویرایش</a><form method="post" action="{% url 'management_panel:product_delete' product.pk %}">{% csrf_token %}<button class="secondary">حذف</button></form></div></td></tr>
+{% empty %}<tr><td colspan="6">محصولی وجود ندارد.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}
+

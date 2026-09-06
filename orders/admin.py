@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from . import selectors
-from .forms import ShippingMethodForm
+from .forms import OrderAdminForm, ShippingMethodForm
 from .models import Order, OrderItem, ShippingMethod
 
 
@@ -17,6 +17,7 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    form = OrderAdminForm
     list_display = (
         'id',
         'user',
@@ -28,7 +29,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ('status', 'shipping_method')
     search_fields = ('id', 'user__phone_number')
     list_select_related = ('user', 'address', 'shipping_method')
-    readonly_fields = ('shipping_cost', 'created_at', 'updated_at')
+    readonly_fields = ('shipping_cost', 'tax_amount', 'created_at', 'updated_at')
     inlines = (OrderItemInline,)
     actions = ('cancel_selected_orders',)
 
@@ -41,15 +42,8 @@ class OrderAdmin(admin.ModelAdmin):
         self.message_user(request, f'{canceled_count} سفارش لغو شد.')
 
     def save_model(self, request, obj, form, change):
-        should_cancel = False
-        if change and obj.status == Order.Status.CANCELED:
-            old_status = Order.objects.filter(pk=obj.pk).values_list(
-                'status', flat=True
-            ).first()
-            should_cancel = old_status != Order.Status.CANCELED
-
-        if should_cancel:
-            selectors.cancel_order_by_admin(obj.pk)
+        if change and 'status' in form.changed_data:
+            selectors.change_order_status_by_admin(obj.pk, obj.status)
         super().save_model(request, obj, form, change)
 
 

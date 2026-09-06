@@ -1,0 +1,58 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}فاکتور {{ invoice.number }}{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="actions">
+        <h1>فاکتور {{ invoice.number }}</h1>
+        <button type="button" onclick="window.print()">چاپ فاکتور</button>
+    </div>
+    <p>وضعیت: <strong>{{ invoice.get_status_display }}</strong></p>
+    <p>تاریخ صدور: {{ invoice.issued_at }}</p>
+    <p>شماره سفارش: {{ invoice.order_id }}</p>
+    <p>شماره پیگیری پرداخت: {{ invoice.payment_reference }}</p>
+    {% if invoice.refunded_at %}
+        <p>تاریخ بازگشت وجه: {{ invoice.refunded_at }}</p>
+    {% endif %}
+</section>
+
+<section class="panel">
+    <h2>اطلاعات خریدار</h2>
+    <p>نام: {{ invoice.buyer_name }}</p>
+    <p>تلفن: {{ invoice.buyer_phone }}</p>
+    {% if invoice.buyer_email %}<p>ایمیل: {{ invoice.buyer_email }}</p>{% endif %}
+    <p>آدرس: {{ invoice.province }}، {{ invoice.city }}، {{ invoice.address }}</p>
+    <p>کد پستی: {{ invoice.postal_code }}</p>
+</section>
+
+<section class="panel table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>محصول</th>
+                <th>قیمت واحد</th>
+                <th>تعداد</th>
+                <th>مبلغ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in lines %}
+                <tr>
+                    <td>{{ line.product_name }}</td>
+                    <td>{{ line.unit_price }} تومان</td>
+                    <td>{{ line.quantity }}</td>
+                    <td>{{ line.total_price }} تومان</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="panel">
+    <p>مبلغ محصولات: {{ invoice.subtotal }} تومان</p>
+    <p>مالیات: {{ invoice.tax_amount }} تومان</p>
+    <p>هزینه ارسال: {{ invoice.shipping_cost }} تومان</p>
+    <p class="price">مبلغ نهایی: {{ invoice.total_amount }} تومان</p>
+</section>
+{% endblock %}

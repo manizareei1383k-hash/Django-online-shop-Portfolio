@@ -1,0 +1,3 @@
+{% extends 'management_panel/base.html' %}
+{% block management_content %}<section class="panel"><h2>پاسخ به نظر</h2><p>محصول: {{ review.product }}</p><blockquote>{{ review.review }}</blockquote><form method="post">{% csrf_token %}{{ form.as_p }}<button>ذخیره پاسخ</button></form></section>{% endblock %}
+

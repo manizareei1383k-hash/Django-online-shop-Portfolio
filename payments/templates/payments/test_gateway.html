@@ -1,0 +1,23 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}درگاه آزمایشی{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>درگاه آزمایشی</h1>
+    <p>سفارش شماره {{ payment.order_id }}</p>
+    <p class="price">مبلغ: {{ payment.amount }} تومان</p>
+    {% if payment.status == 'pending' %}
+        <form method="post" action="{% url 'payments:test_gateway_callback' payment.token %}">
+            {% csrf_token %}
+            <div class="actions">
+                <button type="submit" name="result" value="success">پرداخت موفق</button>
+                <button class="secondary" type="submit" name="result" value="failed">پرداخت ناموفق</button>
+            </div>
+        </form>
+    {% else %}
+        <p>وضعیت این پرداخت: {{ payment.get_status_display }}</p>
+        <a class="button" href="{% url 'orders:detail' payment.order_id %}">بازگشت به سفارش</a>
+    {% endif %}
+</section>
+{% endblock %}

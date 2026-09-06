@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import sys
+from decimal import Decimal
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -41,6 +43,10 @@ INSTALLED_APPS = [
     'shop',
     'cart',
     'orders',
+    'payments',
+    'invoices',
+    'notifications.apps.NotificationsConfig',
+    'management_panel',
 ]
 
 AUTH_USER_MODEL = 'account.User'
@@ -53,6 +59,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'config.middleware.UserRateLimitMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -133,3 +140,13 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'no-reply@example.com'
+
+
+# Five requests per route and per user/IP in each 60-second window.
+# The middleware has focused tests and is disabled during the unrelated test suite.
+RATE_LIMIT_ENABLED = 'test' not in sys.argv
+RATE_LIMIT_REQUESTS = 5
+RATE_LIMIT_WINDOW_SECONDS = 60
+
+# Tax applied to the products subtotal of newly created orders.
+TAX_PERCENT = Decimal('10.00')

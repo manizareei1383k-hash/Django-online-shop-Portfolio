@@ -1,0 +1,3 @@
+{% extends 'management_panel/base.html' %}
+{% block management_content %}<section class="panel"><h2>پرداخت شماره {{ payment.pk }}</h2><p>سفارش: {{ payment.order_id }}</p><p>کاربر: {{ payment.user }}</p><p>درگاه: {{ payment.get_gateway_display }}</p><p>وضعیت: {{ payment.get_status_display }}</p><p>مبلغ: {{ payment.amount }}</p><p>پیگیری پرداخت: {{ payment.gateway_reference|default:'-' }}</p><p>پیگیری بازگشت: {{ payment.refund_reference|default:'-' }}</p><p>خطا: {{ payment.failure_reason|default:'-' }}</p></section>{% endblock %}
+

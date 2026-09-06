@@ -1,0 +1,16 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}پرداخت سفارش{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>پرداخت سفارش شماره {{ order.pk }}</h1>
+    <p class="price">مبلغ قابل پرداخت: {{ amount }} تومان</p>
+    <form method="post" action="{% url 'payments:start' order.pk %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">ادامه پرداخت</button>
+    </form>
+</section>
+{% endblock %}
+

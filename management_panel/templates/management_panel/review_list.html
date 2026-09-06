@@ -1,0 +1,5 @@
+{% extends 'management_panel/base.html' %}
+{% block management_content %}
+<section class="panel table-wrap"><h2>نظرها</h2><table><thead><tr><th>محصول</th><th>کاربر</th><th>نظر</th><th>پاسخ</th><th></th></tr></thead><tbody>{% for review in reviews %}<tr><td>{{ review.product }}</td><td>{{ review.user|default:review.name }}</td><td>{{ review.review|truncatechars:80 }}</td><td>{% if review.reply %}دارد{% else %}ندارد{% endif %}</td><td><a href="{% url 'management_panel:review_detail' review.pk %}">پاسخ</a></td></tr>{% empty %}<tr><td colspan="5">نظری وجود ندارد.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}
+

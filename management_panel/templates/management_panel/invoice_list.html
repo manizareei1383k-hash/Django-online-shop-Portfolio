@@ -1,0 +1,3 @@
+{% extends 'management_panel/base.html' %}
+{% block management_content %}<section class="panel table-wrap"><h2>فاکتورها</h2><table><thead><tr><th>شماره</th><th>سفارش</th><th>کاربر</th><th>مبلغ</th><th>وضعیت</th><th></th></tr></thead><tbody>{% for invoice in invoices %}<tr><td>{{ invoice.number }}</td><td>{{ invoice.order_id }}</td><td>{{ invoice.user }}</td><td>{{ invoice.total_amount }}</td><td>{{ invoice.get_status_display }}</td><td><a href="{% url 'management_panel:invoice_detail' invoice.pk %}">جزئیات</a></td></tr>{% empty %}<tr><td colspan="6">فاکتوری وجود ندارد.</td></tr>{% endfor %}</tbody></table></section>{% endblock %}
+

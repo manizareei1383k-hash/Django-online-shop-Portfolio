@@ -1,0 +1,23 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}پنل مدیریت{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>پنل مدیریت فروشگاه</h1>
+    <div class="actions">
+        <a class="button" href="{% url 'management_panel:dashboard' %}">داشبورد</a>
+        <a class="button" href="{% url 'management_panel:products' %}">محصولات</a>
+        <a class="button" href="{% url 'management_panel:categories' %}">دسته‌بندی‌ها</a>
+        <a class="button" href="{% url 'management_panel:shipping_methods' %}">روش‌های ارسال</a>
+        <a class="button" href="{% url 'management_panel:orders' %}">سفارش‌ها</a>
+        <a class="button" href="{% url 'management_panel:tickets' %}">تیکت‌ها</a>
+        <a class="button" href="{% url 'management_panel:reviews' %}">نظرها</a>
+        <a class="button" href="{% url 'management_panel:payments' %}">پرداخت‌ها</a>
+        <a class="button" href="{% url 'management_panel:invoices' %}">فاکتورها</a>
+        <a class="button" href="{% url 'management_panel:users' %}">کاربران</a>
+        <a class="button" href="{% url 'management_panel:activities' %}">فعالیت ادمین‌ها</a>
+    </div>
+</section>
+{% block management_content %}{% endblock %}
+{% endblock %}
