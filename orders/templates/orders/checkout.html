@@ -1,0 +1,54 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}ثبت سفارش{% endblock %}
+
+{% block content %}
+<h1>ثبت سفارش</h1>
+
+{% if lines %}
+<section class="panel table-wrap">
+    <h2>خلاصه سبد خرید</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>محصول</th>
+                <th>قیمت واحد</th>
+                <th>تعداد</th>
+                <th>جمع</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in lines %}
+                <tr>
+                    <td>{{ line.item.product.name }}</td>
+                    <td>{{ line.unit_price }} تومان</td>
+                    <td>{{ line.item.quantity }}</td>
+                    <td>{{ line.total_price }} تومان</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="panel">
+    <h2>آدرس و روش ارسال</h2>
+    {% if not request.user.addresses.exists %}
+        <p>برای ثبت سفارش ابتدا یک آدرس اضافه کنید.</p>
+        <a class="button" href="{% url 'account:address_create' %}">افزودن آدرس</a>
+    {% else %}
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {{ form.as_p }}
+            <p>مبلغ محصولات: <strong>{{ subtotal }} تومان</strong></p>
+            {% if shipping_cost %}<p>هزینه ارسال انتخاب‌شده: {{ shipping_cost }} تومان</p>{% endif %}
+            <button type="submit">ثبت نهایی سفارش</button>
+        </form>
+    {% endif %}
+</section>
+{% else %}
+<section class="empty">
+    <h2>سبد خرید شما خالی است</h2>
+    <a class="button" href="{% url 'shop:shop' %}">مشاهده محصولات</a>
+</section>
+{% endif %}
+{% endblock %}

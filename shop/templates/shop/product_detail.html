@@ -1,0 +1,79 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<article class="panel detail">
+    <div>
+        {% if product.image %}
+            <img class="detail-image" src="{{ product.image.url }}" alt="{{ product.name }}">
+        {% else %}
+            <div class="image-placeholder">بدون تصویر</div>
+        {% endif %}
+    </div>
+    <div>
+        <p class="muted"><a href="{% url 'shop:shop' %}?category={{ product.category_id }}">{{ product.category.name }}</a></p>
+        <h1>{{ product.name }}</h1>
+        <p>{{ product.description|default:'توضیحی برای این محصول ثبت نشده است.'|linebreaksbr }}</p>
+
+        {% with discount=product.active_discount %}
+            {% if discount %}
+                <p>
+                    <del class="old-price">{{ product.price }} تومان</del>
+                    <span class="discount">{{ discount.percent }}٪ تخفیف</span>
+                </p>
+            {% endif %}
+            <p class="price">{{ product.price_after_discount }} تومان</p>
+        {% endwith %}
+
+        <p>وضعیت: {{ product.status }}</p>
+        {% if product.quantity > 0 %}
+            <p>موجودی: {{ product.quantity }} عدد</p>
+            {% if request.user.is_authenticated %}
+                <form method="post" action="{% url 'cart:add' product.pk %}">
+                    {% csrf_token %}
+                    <label for="product-quantity">تعداد</label>
+                    <input id="product-quantity" type="number" name="quantity" value="1" min="1" max="{{ product.quantity }}" required>
+                    <button type="submit">افزودن به سبد خرید</button>
+                </form>
+            {% else %}
+                <a class="button" href="{% url 'account:login' %}?next={{ request.path|urlencode }}">برای خرید وارد شوید</a>
+            {% endif %}
+        {% else %}
+            <p class="discount">این محصول فعلاً ناموجود است.</p>
+        {% endif %}
+    </div>
+</article>
+
+<section class="panel">
+    <h2>نظرهای کاربران</h2>
+    {% for item in product.reviews.all %}
+        <article class="review">
+            <strong>{{ item.name }}</strong>
+            <p>{{ item.review }}</p>
+        </article>
+    {% empty %}
+        <p>هنوز نظری برای این محصول ثبت نشده است.</p>
+    {% endfor %}
+</section>
+
+<section class="panel">
+    <h2>ثبت نظر</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ review_form.as_p }}
+        <button type="submit">ارسال نظر</button>
+    </form>
+</section>
+
+{% if related_products %}
+<section>
+    <h2>محصولات مشابه</h2>
+    <div class="grid">
+        {% for product in related_products %}
+            {% include 'shop/includes/product_card.html' %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

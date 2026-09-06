@@ -1,0 +1,21 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}تماس با ما{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>تماس با ما</h1>
+    <p class="muted">اگر درباره محصول، سفارش یا خدمات فروشگاه پرسشی دارید، پیام خود را ارسال کنید.</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">ارسال پیام</button>
+    </form>
+</section>
+
+<section class="panel">
+    <h2>راه‌های ارتباطی</h2>
+    <p>پاسخ پیام‌ها در اولین فرصت برای ایمیل واردشده ارسال می‌شود.</p>
+    <p class="muted">ساعات پاسخ‌گویی: شنبه تا پنجشنبه، ساعت ۹ تا ۱۷</p>
+</section>
+{% endblock %}

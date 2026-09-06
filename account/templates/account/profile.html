@@ -1,0 +1,44 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}حساب من{% endblock %}
+
+{% block content %}
+<section class="panel">
+    {% if request.user.avatar %}<img class="avatar" src="{{ request.user.avatar.url }}" alt="پروفایل">{% endif %}
+    <h1>{{ request.user.get_full_name|default:request.user.phone_number }}</h1>
+    <p>شماره تلفن: {{ request.user.phone_number }}</p>
+    {% if request.user.email %}<p>ایمیل: {{ request.user.email }}</p>{% endif %}
+    <div class="actions">
+        <a class="button" href="{% url 'account:profile_edit' %}">ویرایش پروفایل</a>
+        <a class="button secondary" href="{% url 'account:password_change' %}">تغییر رمز عبور</a>
+    </div>
+</section>
+
+<section class="grid">
+    <a class="panel" href="{% url 'orders:list' %}">
+        <h2>سفارش‌ها</h2>
+        <p>مشاهده سفارش‌های ثبت‌شده</p>
+    </a>
+    <a class="panel" href="{% url 'account:address_list' %}">
+        <h2>آدرس‌ها</h2>
+        <p>{{ addresses_count }} آدرس ثبت‌شده</p>
+    </a>
+    <a class="panel" href="{% url 'account:ticket_list' %}">
+        <h2>تیکت‌ها</h2>
+        <p>{{ tickets_count }} تیکت</p>
+    </a>
+    <a class="panel" href="{% url 'account:wallet' %}">
+        <h2>کیف پول</h2>
+        <p>مشاهده موجودی و تراکنش‌ها</p>
+    </a>
+</section>
+
+{% if recent_tickets %}
+<section class="panel">
+    <h2>تیکت‌های اخیر</h2>
+    {% for ticket in recent_tickets %}
+        <p><a href="{% url 'account:ticket_detail' ticket.pk %}">#{{ ticket.pk }} — {{ ticket.subject }}</a></p>
+    {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

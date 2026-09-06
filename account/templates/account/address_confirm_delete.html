@@ -1,0 +1,15 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}حذف آدرس{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>حذف آدرس</h1>
+    <p>آیا از حذف «{{ address.title }}» مطمئن هستید؟</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">بله، حذف شود</button>
+        <a class="button secondary" href="{% url 'account:address_list' %}">انصراف</a>
+    </form>
+</section>
+{% endblock %}

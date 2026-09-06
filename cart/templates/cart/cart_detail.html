@@ -1,0 +1,68 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}سبد خرید{% endblock %}
+
+{% block content %}
+<div class="actions">
+    <h1>سبد خرید</h1>
+    {% if lines %}
+        <form method="post" action="{% url 'cart:clear' %}">
+            {% csrf_token %}
+            <button class="secondary" type="submit">خالی‌کردن سبد</button>
+        </form>
+    {% endif %}
+</div>
+
+{% if lines %}
+<section class="panel table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>محصول</th>
+                <th>قیمت واحد</th>
+                <th>تعداد</th>
+                <th>جمع</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in lines %}
+                <tr>
+                    <td>
+                        <a href="{% url 'shop:product_detail' line.item.product.pk %}">
+                            {{ line.item.product.name }}
+                        </a>
+                    </td>
+                    <td>{{ line.unit_price }} تومان</td>
+                    <td>
+                        <form method="post" action="{% url 'cart:item_update' line.item.pk %}">
+                            {% csrf_token %}
+                            <input type="number" name="quantity" value="{{ line.item.quantity }}" min="1" max="{{ line.item.product.quantity }}" required>
+                            <button type="submit">تغییر</button>
+                        </form>
+                    </td>
+                    <td>{{ line.total_price }} تومان</td>
+                    <td>
+                        <form method="post" action="{% url 'cart:item_remove' line.item.pk %}">
+                            {% csrf_token %}
+                            <button class="secondary" type="submit">حذف</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="panel">
+    <p>تعداد کل: <strong>{{ total_items }}</strong></p>
+    <p class="price">مبلغ کل: {{ total_price }} تومان</p>
+    <a class="button" href="{% url 'orders:checkout' %}">ادامه و ثبت سفارش</a>
+</section>
+{% else %}
+<section class="empty">
+    <h2>سبد خرید شما خالی است</h2>
+    <a class="button" href="{% url 'shop:shop' %}">مشاهده محصولات</a>
+</section>
+{% endif %}
+{% endblock %}

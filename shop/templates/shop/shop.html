@@ -1,0 +1,60 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}فروشگاه{% endblock %}
+
+{% block content %}
+<h1>محصولات فروشگاه</h1>
+
+<section class="panel">
+    <form method="get" class="filters">
+        <label>
+            جست‌وجو
+            <input type="search" name="q" value="{{ filters.q }}" placeholder="نام یا توضیحات محصول">
+        </label>
+        <label>
+            دسته‌بندی
+            <select name="category">
+                <option value="">همه دسته‌بندی‌ها</option>
+                {% for category in categories %}
+                    <option value="{{ category.pk }}" {% if filters.category == category.pk|stringformat:'s' %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            مرتب‌سازی
+            <select name="sort">
+                <option value="newest" {% if filters.sort == 'newest' %}selected{% endif %}>جدیدترین</option>
+                <option value="oldest" {% if filters.sort == 'oldest' %}selected{% endif %}>قدیمی‌ترین</option>
+                <option value="price_asc" {% if filters.sort == 'price_asc' %}selected{% endif %}>ارزان‌ترین</option>
+                <option value="price_desc" {% if filters.sort == 'price_desc' %}selected{% endif %}>گران‌ترین</option>
+                <option value="name" {% if filters.sort == 'name' %}selected{% endif %}>نام محصول</option>
+            </select>
+        </label>
+        <label class="check">
+            <input type="checkbox" name="in_stock" value="1" {% if filters.in_stock %}checked{% endif %}>
+            فقط کالاهای موجود
+        </label>
+        <button type="submit">اعمال فیلتر</button>
+    </form>
+    {% if filters.q or filters.category or filters.in_stock or filters.sort != 'newest' %}
+        <p><a href="{% url 'shop:shop' %}">پاک‌کردن فیلترها</a></p>
+    {% endif %}
+</section>
+
+<p class="muted">{{ page.paginator.count }} محصول پیدا شد.</p>
+<div class="grid">
+    {% for product in page %}
+        {% include 'shop/includes/product_card.html' %}
+    {% empty %}
+        <p class="empty">محصولی با این مشخصات پیدا نشد.</p>
+    {% endfor %}
+</div>
+
+{% if page.paginator.num_pages > 1 %}
+<nav class="pagination" aria-label="صفحه‌بندی">
+    {% if page.has_previous %}<a href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={{ page.previous_page_number }}">قبلی</a>{% endif %}
+    <span>صفحه {{ page.number }} از {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={{ page.next_page_number }}">بعدی</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

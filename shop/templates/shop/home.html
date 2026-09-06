@@ -1,0 +1,39 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}صفحه اصلی{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>به فروشگاه ما خوش آمدید</h1>
+    <p class="muted">محصولات جدید را ببینید، میان دسته‌بندی‌ها جست‌وجو کنید و خریدتان را ساده‌تر انجام دهید.</p>
+    <a class="button" href="{% url 'shop:shop' %}">مشاهده فروشگاه</a>
+</section>
+
+<section>
+    <h2>دسته‌بندی‌ها</h2>
+    <div class="grid">
+        {% for category in categories %}
+            <a class="panel category-link" href="{% url 'shop:shop' %}?category={{ category.pk }}">
+                {% if category.image %}<img src="{{ category.image.url }}" alt="{{ category.name }}">{% endif %}
+                <strong>{{ category.name }}</strong>
+            </a>
+        {% empty %}
+            <p>هنوز دسته‌بندی‌ای ثبت نشده است.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section>
+    <h2>جدیدترین محصولات</h2>
+    <div class="grid">
+        {% for product in products %}
+            {% include 'shop/includes/product_card.html' %}
+        {% empty %}
+            <p>هنوز محصولی ثبت نشده است.</p>
+        {% endfor %}
+    </div>
+    {% if products %}
+        <p><a class="button" href="{% url 'shop:shop' %}">مشاهده همه محصولات</a></p>
+    {% endif %}
+</section>
+{% endblock %}

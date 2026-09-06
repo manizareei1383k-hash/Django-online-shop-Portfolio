@@ -1,0 +1,26 @@
+<article class="card">
+    {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+    {% else %}
+        <div class="image-placeholder">بدون تصویر</div>
+    {% endif %}
+    <div class="card-body">
+        <small class="muted">{{ product.category.name }}</small>
+        <h3>{{ product.name }}</h3>
+        {% with discount=product.active_discount %}
+            {% if discount %}
+                <p>
+                    <del class="old-price">{{ product.price }} تومان</del>
+                    <span class="discount">{{ discount.percent }}٪ تخفیف</span>
+                </p>
+            {% endif %}
+            <p class="price">{{ product.price_after_discount }} تومان</p>
+        {% endwith %}
+        {% if product.quantity > 0 %}
+            <p class="muted">موجود در انبار</p>
+        {% else %}
+            <p class="discount">ناموجود</p>
+        {% endif %}
+        <a class="button" href="{% url 'shop:product_detail' product.pk %}">مشاهده محصول</a>
+    </div>
+</article>

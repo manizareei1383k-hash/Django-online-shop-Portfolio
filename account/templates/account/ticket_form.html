@@ -1,0 +1,14 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}تیکت جدید{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>ساخت تیکت جدید</h1>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">ساخت تیکت</button>
+    </form>
+</section>
+{% endblock %}

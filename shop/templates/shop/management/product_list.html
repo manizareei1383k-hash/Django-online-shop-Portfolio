@@ -1,0 +1,46 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}مدیریت محصولات{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>مدیریت محصولات</h1>
+    {% if request.user.is_staff %}
+        <p><a class="button" href="{% url 'shop:product_create' %}">افزودن محصول</a></p>
+    {% endif %}
+
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="padding: 12px; text-align: right;">نام</th>
+                    <th style="padding: 12px; text-align: right;">دسته‌بندی</th>
+                    <th style="padding: 12px; text-align: right;">قیمت</th>
+                    <th style="padding: 12px; text-align: right;">موجودی</th>
+                    <th style="padding: 12px; text-align: right;">عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                    <tr style="border-top: 1px solid #ddd;">
+                        <td style="padding: 12px;">{{ product.name }}</td>
+                        <td style="padding: 12px;">{{ product.category.name }}</td>
+                        <td style="padding: 12px;">{{ product.price }}</td>
+                        <td style="padding: 12px;">{{ product.quantity }}</td>
+                        <td style="padding: 12px;">
+                            {% if request.user.is_staff %}
+                                <a href="{% url 'shop:product_update' product.pk %}">ویرایش</a>
+                            {% endif %}
+                            {% if request.user.is_staff %}
+                                | <a href="{% url 'shop:product_delete' product.pk %}">حذف</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5" style="padding: 12px;">محصولی وجود ندارد.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

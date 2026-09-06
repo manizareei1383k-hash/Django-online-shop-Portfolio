@@ -1,0 +1,39 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}کیف پول{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>کیف پول</h1>
+    <p class="muted">موجودی فعلی</p>
+    <p class="price">{{ wallet.balance }} تومان</p>
+</section>
+
+<section class="panel table-wrap">
+    <h2>آخرین تراکنش‌ها</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>نوع</th>
+                <th>دلیل</th>
+                <th>مبلغ</th>
+                <th>موجودی بعد از تراکنش</th>
+                <th>تاریخ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in transactions %}
+                <tr>
+                    <td>{{ item.get_direction_display }}</td>
+                    <td>{{ item.get_kind_display }}</td>
+                    <td>{{ item.amount }}</td>
+                    <td>{{ item.balance_after }}</td>
+                    <td>{{ item.created_at }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">هنوز تراکنشی ثبت نشده است.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

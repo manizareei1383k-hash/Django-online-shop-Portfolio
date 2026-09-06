@@ -1,0 +1,14 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}ویرایش پروفایل{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>ویرایش پروفایل</h1>
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">ذخیره تغییرات</button>
+    </form>
+</section>
+{% endblock %}

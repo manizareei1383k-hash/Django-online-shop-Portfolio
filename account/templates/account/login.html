@@ -1,0 +1,16 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}ورود{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>ورود به حساب کاربری</h1>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">ورود</button>
+    </form>
+    <p><a href="{% url 'account:password_reset' %}">رمز عبور را فراموش کرده‌اید؟</a></p>
+    <p>حساب ندارید؟ <a href="{% url 'account:register' %}">ثبت‌نام کنید</a>.</p>
+</section>
+{% endblock %}

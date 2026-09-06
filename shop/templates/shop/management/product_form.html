@@ -1,0 +1,15 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>{{ page_title }}</h1>
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">ذخیره محصول</button>
+        <a href="{% url 'shop:product_management' %}">انصراف</a>
+    </form>
+</section>
+{% endblock %}

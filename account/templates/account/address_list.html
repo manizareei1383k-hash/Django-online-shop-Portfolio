@@ -1,0 +1,28 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}آدرس‌های من{% endblock %}
+
+{% block content %}
+<div class="actions">
+    <h1>آدرس‌های من</h1>
+    <a class="button" href="{% url 'account:address_create' %}">افزودن آدرس</a>
+</div>
+
+<div class="grid">
+    {% for address in addresses %}
+        <article class="panel">
+            <h2>{{ address.title }}{% if address.is_default %} — پیش‌فرض{% endif %}</h2>
+            <p>{{ address.recipient_name }} — {{ address.recipient_phone }}</p>
+            <p>{{ address.province }}، {{ address.city }}</p>
+            <p>{{ address.address }}</p>
+            <p>کدپستی: {{ address.postal_code }}</p>
+            <div class="actions">
+                <a class="button" href="{% url 'account:address_update' address.pk %}">ویرایش</a>
+                <a class="button secondary" href="{% url 'account:address_delete' address.pk %}">حذف</a>
+            </div>
+        </article>
+    {% empty %}
+        <p class="empty">هنوز آدرسی ثبت نکرده‌اید.</p>
+    {% endfor %}
+</div>
+{% endblock %}

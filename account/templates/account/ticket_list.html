@@ -1,0 +1,37 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}تیکت‌های من{% endblock %}
+
+{% block content %}
+<div class="actions">
+    <h1>تیکت‌های من</h1>
+    <a class="button" href="{% url 'account:ticket_create' %}">تیکت جدید</a>
+</div>
+
+<section class="panel table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>شماره</th>
+                <th>موضوع</th>
+                <th>اولویت</th>
+                <th>وضعیت</th>
+                <th>آخرین تغییر</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
+                <tr>
+                    <td>#{{ ticket.pk }}</td>
+                    <td><a href="{% url 'account:ticket_detail' ticket.pk %}">{{ ticket.subject }}</a></td>
+                    <td>{{ ticket.get_priority_display }}</td>
+                    <td>{{ ticket.get_status_display }}</td>
+                    <td>{{ ticket.updated_at }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">هنوز تیکتی ثبت نکرده‌اید.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

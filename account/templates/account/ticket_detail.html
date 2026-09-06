@@ -1,0 +1,38 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}تیکت {{ ticket.pk }}{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>#{{ ticket.pk }} — {{ ticket.subject }}</h1>
+    <p>وضعیت: {{ ticket.get_status_display }}</p>
+    <p>اولویت: {{ ticket.get_priority_display }}</p>
+</section>
+
+<section class="panel">
+    <h2>پیام‌ها</h2>
+    {% for item in ticket.messages.all %}
+        <article class="ticket-message">
+            <strong>{% if item.sender == request.user %}شما{% else %}پشتیبانی{% endif %}</strong>
+            <small class="muted"> — {{ item.created_at }}</small>
+            <p>{{ item.message|linebreaksbr }}</p>
+            {% if item.attachment %}<a href="{{ item.attachment.url }}">دریافت فایل پیوست</a>{% endif %}
+        </article>
+    {% empty %}
+        <p>هنوز پیامی در این تیکت وجود ندارد.</p>
+    {% endfor %}
+</section>
+
+{% if ticket.status != 'closed' %}
+<section class="panel">
+    <h2>ارسال پیام</h2>
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">ارسال پیام</button>
+    </form>
+</section>
+{% else %}
+<p class="empty">این تیکت بسته شده است.</p>
+{% endif %}
+{% endblock %}

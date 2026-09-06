@@ -1,0 +1,39 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}سفارش‌های من{% endblock %}
+
+{% block content %}
+<h1>سفارش‌های من</h1>
+
+{% if order_rows %}
+<section class="panel table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>شماره</th>
+                <th>وضعیت</th>
+                <th>تعداد ردیف</th>
+                <th>مبلغ کل</th>
+                <th>تاریخ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in order_rows %}
+                <tr>
+                    <td><a href="{% url 'orders:detail' row.order.pk %}">#{{ row.order.pk }}</a></td>
+                    <td>{{ row.order.get_status_display }}</td>
+                    <td>{{ row.order.items.count }}</td>
+                    <td>{{ row.total_price }} تومان</td>
+                    <td>{{ row.order.created_at }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% else %}
+<section class="empty">
+    <h2>هنوز سفارشی ثبت نکرده‌اید</h2>
+    <a class="button" href="{% url 'shop:shop' %}">مشاهده محصولات</a>
+</section>
+{% endif %}
+{% endblock %}

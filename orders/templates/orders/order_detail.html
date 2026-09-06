@@ -1,0 +1,51 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}سفارش شماره {{ order.pk }}{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>سفارش شماره {{ order.pk }}</h1>
+    <p>وضعیت: <strong>{{ order.get_status_display }}</strong></p>
+    <p>تاریخ ثبت: {{ order.created_at }}</p>
+    <p>آدرس: {{ order.address.province }}، {{ order.address.city }}، {{ order.address.address }}</p>
+    {% if order.shipping_method %}
+        <p>روش ارسال: {{ order.shipping_method.name }}</p>
+    {% endif %}
+    {% if order.description %}<p>توضیحات: {{ order.description }}</p>{% endif %}
+</section>
+
+<section class="panel table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>محصول</th>
+                <th>قیمت واحد</th>
+                <th>تعداد</th>
+                <th>جمع</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in lines %}
+                <tr>
+                    <td>{{ line.item.product.name }}</td>
+                    <td>{{ line.item.unit_price }} تومان</td>
+                    <td>{{ line.item.quantity }}</td>
+                    <td>{{ line.total_price }} تومان</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="panel">
+    <p>مبلغ محصولات: {{ subtotal }} تومان</p>
+    <p>هزینه ارسال: {{ shipping_cost }} تومان</p>
+    <p class="price">مبلغ کل: {{ total_price }} تومان</p>
+    {% if order.status == 'pending' %}
+        <form method="post" action="{% url 'orders:cancel' order.pk %}">
+            {% csrf_token %}
+            <button class="secondary" type="submit">لغو سفارش</button>
+        </form>
+    {% endif %}
+</section>
+{% endblock %}
