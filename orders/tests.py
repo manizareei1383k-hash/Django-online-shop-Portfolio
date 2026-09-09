@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
@@ -7,6 +8,7 @@ from django.urls import reverse
 from account.models import Address, User
 from cart.models import Cart, CartItem
 from shop.models import Category, Product
+from shop.selectors import get_product_detail_cache_key
 from payments.models import Payment
 
 from . import selectors
@@ -105,6 +107,23 @@ class OrderViewTests(TestCase):
         self.product.refresh_from_db()
         self.assertEqual(self.product.quantity, 3)
         self.assertFalse(CartItem.objects.filter(cart__user=self.user).exists())
+
+    def test_checkout_invalidates_product_detail_cache(self):
+        self.add_product_to_cart(quantity=2)
+        cache.clear()
+        cache_key = get_product_detail_cache_key(self.product.pk)
+        self.client.get(reverse('shop:product_detail', args=[self.product.pk]))
+        self.assertIsNotNone(cache.get(cache_key))
+
+        self.client.force_login(self.user)
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse('orders:checkout'),
+                self.checkout_data(),
+            )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIsNone(cache.get(cache_key))
 
     def test_checkout_ignores_prices_sent_by_user(self):
         self.add_product_to_cart(quantity=2)
@@ -325,12 +344,8 @@ class OrderViewTests(TestCase):
         self.product.quantity = 3
         self.product.save(update_fields=('quantity',))
         self.client.force_login(admin_user)
-        action_url = reverse('admin:orders_order_changelist')
-        action_data = {
-            'action': 'cancel_selected_orders',
-            '_selected_action': order.pk,
-            'select_across': '0',
-        }
+        action_url = reverse('management_panel:order_cancel', args=[order.pk])
+        action_data = {}
 
         first_response = self.client.post(action_url, action_data)
         second_response = self.client.post(action_url, action_data)

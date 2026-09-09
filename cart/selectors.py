@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.shortcuts import get_object_or_404
+from django.db import transaction
 
 from shop.models import Product
 
@@ -45,6 +46,7 @@ def get_cart_context(user):
     }
 
 
+@transaction.atomic
 def add_product_to_cart(user, product_id, data):
     product = get_object_or_404(Product, pk=product_id)
     form = CartItemQuantityForm(data=data)
@@ -57,6 +59,7 @@ def add_product_to_cart(user, product_id, data):
         return 'insufficient_stock'
 
     cart = get_user_cart(user)
+    Cart.objects.select_for_update().get(pk=cart.pk)
     item = CartItem.objects.filter(cart=cart, product=product).first()
 
     if item is None:
@@ -76,7 +79,9 @@ def add_product_to_cart(user, product_id, data):
     return 'added'
 
 
+@transaction.atomic
 def update_cart_item(user, item_id, data):
+    get_object_or_404(Cart.objects.select_for_update(), user=user)
     item = get_object_or_404(
         CartItem.objects.select_related('product'),
         pk=item_id,
@@ -95,11 +100,15 @@ def update_cart_item(user, item_id, data):
     return 'updated'
 
 
+@transaction.atomic
 def remove_cart_item(user, item_id):
+    get_object_or_404(Cart.objects.select_for_update(), user=user)
     item = get_object_or_404(CartItem, pk=item_id, cart__user=user)
     item.delete()
 
 
+@transaction.atomic
 def clear_user_cart(user):
     cart = get_user_cart(user)
+    Cart.objects.select_for_update().get(pk=cart.pk)
     cart.items.all().delete()

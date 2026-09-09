@@ -6,8 +6,9 @@ from django.db import transaction
 from django.db.models import F
 from django.shortcuts import get_object_or_404
 
-from cart.models import CartItem
+from cart.models import Cart, CartItem
 from shop.models import Product
+from shop.signals import invalidate_public_shop_cache
 
 from .forms import OrderForm
 from .models import Order, OrderItem
@@ -157,15 +158,18 @@ def get_checkout_context(user, data=None):
 
 def create_order_from_cart(user, form):
     with transaction.atomic():
+        cart = Cart.objects.select_for_update().filter(user=user).first()
+        if cart is None:
+            return None
         cart_items = list(
             CartItem.objects.select_for_update()
-            .filter(cart__user=user)
-            .select_related('product')
+            .filter(cart=cart).order_by('product_id')
         )
         if not cart_items:
             return None
 
         locked_products = {}
+        unit_prices = {}
         for cart_item in cart_items:
             product = Product.objects.select_for_update().get(
                 pk=cart_item.product_id
@@ -173,13 +177,14 @@ def create_order_from_cart(user, form):
             if product.quantity < cart_item.quantity:
                 return None
             locked_products[product.pk] = product
+            unit_prices[product.pk] = product.price_after_discount
 
         order = form.save(commit=False)
         order.user = user
         order.shipping_cost = order.shipping_method.price
         subtotal = sum(
             (
-                locked_products[item.product_id].price_after_discount
+                unit_prices[item.product_id]
                 * item.quantity
                 for item in cart_items
             ),
@@ -196,7 +201,7 @@ def create_order_from_cart(user, form):
                     order=order,
                     product=product,
                     quantity=cart_item.quantity,
-                    unit_price=product.price_after_discount,
+                    unit_price=unit_prices[product.pk],
                 )
             )
             Product.objects.filter(pk=product.pk).update(
@@ -205,6 +210,7 @@ def create_order_from_cart(user, form):
 
         OrderItem.objects.bulk_create(order_items)
         CartItem.objects.filter(pk__in=[item.pk for item in cart_items]).delete()
+        invalidate_public_shop_cache()
         return order
 
 
@@ -234,7 +240,7 @@ def get_order_detail_context(user, pk):
         'order': order,
         'latest_payment': order.payments.first(),
         'invoice': getattr(order, 'invoice', None),
-        'test_gateway_enabled': settings.DEBUG,
+        'test_gateway_enabled': settings.DEBUG and settings.ENABLE_TEST_GATEWAY,
         **calculate_order_totals(order),
     }
 
@@ -268,6 +274,7 @@ def cancel_user_order(user, pk):
             )
         order.status = Order.Status.CANCELED
         order.save(update_fields=('status', 'updated_at'))
+        invalidate_public_shop_cache()
 
         from notifications.selectors import notify_order_status
 
@@ -298,6 +305,7 @@ def cancel_order_by_admin(order_id):
             )
         order.status = Order.Status.CANCELED
         order.save(update_fields=('status', 'updated_at'))
+        invalidate_public_shop_cache()
 
         from notifications.selectors import notify_order_status
 

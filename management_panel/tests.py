@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
@@ -13,6 +14,8 @@ from orders.models import Order, OrderItem, ShippingMethod
 from payments import selectors as payment_selectors
 from payments.models import Payment
 from shop.models import Category, Product, ProductDiscount, Review, ReviewReply
+
+from . import selectors
 
 
 class ManagementPanelTests(TestCase):
@@ -51,6 +54,16 @@ class ManagementPanelTests(TestCase):
             address='Address',
             postal_code='1234567890',
         )
+
+    def test_dashboard_summary_is_cached(self):
+        cache.clear()
+
+        with self.assertNumQueries(6):
+            first_stats = selectors.get_dashboard_stats()
+        with self.assertNumQueries(0):
+            cached_stats = selectors.get_dashboard_stats()
+
+        self.assertEqual(cached_stats, first_stats)
 
     def test_panel_requires_staff_access(self):
         panel_urls = (

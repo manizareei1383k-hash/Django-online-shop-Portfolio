@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.db.models.deletion import ProtectedError
@@ -12,6 +13,7 @@ from orders import selectors as order_selectors
 from orders.models import Order, ShippingMethod
 from payments.models import Payment
 from shop.models import Category, Product, ProductDiscount, Review, ReviewReply
+from shop.signals import invalidate_public_shop_cache
 
 from .models import AdminActivity
 from .forms import (
@@ -23,6 +25,10 @@ from .forms import (
     TicketManagementForm,
     TicketMessageForm,
 )
+
+
+MANAGEMENT_DASHBOARD_STATS_CACHE_KEY = 'management_panel:dashboard:stats'
+MANAGEMENT_DASHBOARD_STATS_CACHE_TIMEOUT = 30
 
 
 def record_admin_activity(
@@ -46,8 +52,16 @@ def record_admin_activity(
     )
 
 
-def get_dashboard_context():
-    return {
+def get_dashboard_stats(use_cache=True):
+    stats = (
+        cache.get(MANAGEMENT_DASHBOARD_STATS_CACHE_KEY)
+        if use_cache
+        else None
+    )
+    if stats is not None:
+        return stats
+
+    stats = {
         'products_count': Product.objects.count(),
         'users_count': User.objects.filter(is_staff=False).count(),
         'pending_orders_count': Order.objects.filter(
@@ -62,6 +76,19 @@ def get_dashboard_context():
         'paid_total': Payment.objects.filter(status=Payment.Status.PAID).aggregate(
             total=Sum('amount')
         )['total'] or 0,
+    }
+    if use_cache:
+        cache.set(
+            MANAGEMENT_DASHBOARD_STATS_CACHE_KEY,
+            stats,
+            MANAGEMENT_DASHBOARD_STATS_CACHE_TIMEOUT,
+        )
+    return stats
+
+
+def get_dashboard_context(use_cache=True):
+    return {
+        **get_dashboard_stats(use_cache=use_cache),
         'recent_orders': Order.objects.select_related('user')[:8],
     }
 
@@ -103,6 +130,7 @@ def get_product_form_context(
                 product = form.save()
                 if form.cleaned_data.get('remove_discount'):
                     product.discounts.filter(is_active=True).update(is_active=False)
+                    invalidate_public_shop_cache()
                 elif form.cleaned_data.get('discount_percent') is not None:
                     discount = discount or ProductDiscount(product=product)
                     discount.title = form.cleaned_data.get('discount_title', '')
@@ -260,9 +288,9 @@ def get_order_context(pk, data=None, admin_user=None, request=None):
         pk=pk,
     )
     form = OrderStatusForm(data=data, instance=order)
+    old_status = order.status
     changed = False
     if data is not None and form.is_valid():
-        old_status = order.status
         with transaction.atomic():
             changed = order_selectors.change_order_status_by_admin(
                 order.pk,

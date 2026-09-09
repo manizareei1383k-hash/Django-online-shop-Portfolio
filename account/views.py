@@ -5,11 +5,22 @@ from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_safe
+from django.views.decorators.debug import sensitive_post_parameters
+from django.http import FileResponse
 
 from . import selectors
 
 
 @login_required
+@require_safe
+def ticket_attachment(request, name):
+    attachment = selectors.get_ticket_attachment(request.user, name)
+    return FileResponse(attachment, as_attachment=True, content_type='application/octet-stream')
+
+
+@login_required
+@sensitive_post_parameters('old_password', 'new_password1', 'new_password2')
 def password_change(request):
     data = request.POST if request.method == 'POST' else None
     context = selectors.get_password_change_context(request.user, data=data)
@@ -37,6 +48,7 @@ def password_reset_done(request):
     return render(request, 'account/password_reset_done.html')
 
 
+@sensitive_post_parameters('new_password1', 'new_password2')
 def password_reset_confirm(request, uidb64, token):
     data = request.POST if request.method == 'POST' else None
     context = selectors.get_password_reset_confirm_context(
@@ -63,6 +75,7 @@ def password_reset_complete(request):
     return render(request, 'account/password_reset_complete.html')
 
 
+@sensitive_post_parameters('password1', 'password2')
 def register(request):
     if request.user.is_authenticated:
         return redirect('account:profile')
@@ -80,6 +93,7 @@ def register(request):
     return render(request, 'account/register.html', context)
 
 
+@sensitive_post_parameters('password')
 def login(request):
     if request.user.is_authenticated:
         return redirect('account:profile')
@@ -111,6 +125,7 @@ def profile(request):
 
 
 @login_required
+@sensitive_post_parameters('current_password')
 def profile_edit(request):
     data = request.POST if request.method == 'POST' else None
     files = request.FILES if request.method == 'POST' else None

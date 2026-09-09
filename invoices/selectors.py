@@ -14,6 +14,8 @@ class InvoiceError(Exception):
 
 @transaction.atomic
 def issue_invoice_for_payment(payment):
+    order_id = Payment.objects.values_list('order_id', flat=True).get(pk=payment.pk)
+    Order.objects.select_for_update().get(pk=order_id)
     payment = Payment.objects.select_for_update().select_related(
         'order',
         'user',

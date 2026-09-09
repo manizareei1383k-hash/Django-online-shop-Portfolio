@@ -2,6 +2,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.core.cache import cache
 from django.http import HttpResponse
 from django.test import RequestFactory, SimpleTestCase, override_settings
+from unittest.mock import patch
 
 from account.models import User
 
@@ -15,6 +16,9 @@ from .middleware import UserRateLimitMiddleware
 )
 class UserRateLimitMiddlewareTests(SimpleTestCase):
     def setUp(self):
+        timer = patch('config.middleware.time.time', return_value=120)
+        timer.start()
+        self.addCleanup(timer.stop)
         cache.clear()
         self.factory = RequestFactory()
         self.middleware = UserRateLimitMiddleware(
@@ -60,12 +64,12 @@ class UserRateLimitMiddlewareTests(SimpleTestCase):
             self.make_request('/orders/', user=first_user)
 
         blocked = self.make_request('/orders/', user=first_user)
-        allowed = self.make_request('/orders/', user=second_user)
+        allowed = self.make_request('/orders/', user=second_user, ip='192.0.2.2')
 
         self.assertEqual(blocked.status_code, 429)
         self.assertEqual(allowed.status_code, 200)
 
-    def test_staff_users_are_not_limited(self):
+    def test_staff_users_are_also_limited(self):
         staff_user = User(pk=20, phone_number='09120000020', is_staff=True)
 
         responses = [
@@ -73,4 +77,5 @@ class UserRateLimitMiddlewareTests(SimpleTestCase):
             for _ in range(10)
         ]
 
-        self.assertTrue(all(response.status_code == 200 for response in responses))
+        self.assertTrue(all(response.status_code == 200 for response in responses[:5]))
+        self.assertTrue(all(response.status_code == 429 for response in responses[5:]))

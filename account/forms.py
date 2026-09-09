@@ -8,9 +8,10 @@ from django.contrib.auth.forms import (
 )
 
 from .models import Address, Ticket, TicketMessage, User
+from config.uploads import SafeImageFormMixin, clean_ticket_upload
 
 
-class RegisterForm(UserCreationForm):
+class RegisterForm(SafeImageFormMixin, UserCreationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['phone_number'].label = 'شماره تلفن'
@@ -66,7 +67,20 @@ class AccountSetPasswordForm(SetPasswordForm):
         self.fields['new_password2'].label = 'تکرار رمز عبور جدید'
 
 
-class UserProfileForm(forms.ModelForm):
+class UserProfileForm(SafeImageFormMixin, forms.ModelForm):
+    current_password = forms.CharField(
+        required=False,
+        label='رمز فعلی برای تغییر شماره یا ایمیل',
+        widget=forms.PasswordInput,
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        if {'email', 'phone_number'}.intersection(self.changed_data):
+            if not self.instance.check_password(cleaned.get('current_password', '')):
+                self.add_error('current_password', 'برای تغییر شماره یا ایمیل، رمز فعلی را وارد کنید.')
+        return cleaned
+
     class Meta:
         model = User
         fields = (
@@ -100,6 +114,11 @@ class TicketForm(forms.ModelForm):
 
 
 class TicketMessageForm(forms.ModelForm):
+    message = forms.CharField(max_length=10000)
+
+    def clean_attachment(self):
+        return clean_ticket_upload(self.cleaned_data.get('attachment'))
+
     class Meta:
         model = TicketMessage
         fields = ('message', 'attachment')

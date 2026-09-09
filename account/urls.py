@@ -6,6 +6,7 @@ from . import views
 app_name = 'account'
 
 urlpatterns = [
+    path('ticket-attachments/<path:name>', views.ticket_attachment, name='ticket_attachment_file'),
     path('register/', views.register, name='register'),
     path('login/', views.login, name='login'),
     path('logout/', views.logout, name='logout'),

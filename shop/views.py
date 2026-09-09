@@ -61,7 +61,9 @@ def product_management(request):
 def product_create(request):
     data = request.POST if request.method == 'POST' else None
     files = request.FILES if request.method == 'POST' else None
-    context = selectors.get_product_form_context(data=data, files=files)
+    context = selectors.get_product_form_context(
+        data=data, files=files, admin_user=request.user, request=request,
+    )
 
     if context.pop('product_saved'):
         messages.success(request, 'محصول با موفقیت افزوده شد.')
@@ -79,6 +81,8 @@ def product_update(request, pk):
         pk=pk,
         data=data,
         files=files,
+        admin_user=request.user,
+        request=request,
     )
 
     if context.pop('product_saved'):
@@ -94,8 +98,10 @@ def product_delete(request, pk):
     product = selectors.get_product_for_delete(pk)
 
     if request.method == 'POST':
-        selectors.delete_product(product)
-        messages.success(request, 'محصول با موفقیت حذف شد.')
+        if selectors.delete_product(product, request.user, request):
+            messages.success(request, 'محصول با موفقیت حذف شد.')
+        else:
+            messages.error(request, 'محصول در سفارش استفاده شده و قابل حذف نیست.')
         return redirect('shop:product_management')
 
     return render(

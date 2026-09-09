@@ -12,16 +12,21 @@ from orders.selectors import calculate_order_totals
 
 from .forms import PaymentStartForm
 from .models import Payment
+from config.redis import redis_lock
 
 
 class PaymentError(Exception):
     pass
 
 
+def test_gateway_enabled():
+    return settings.DEBUG and settings.ENABLE_TEST_GATEWAY
+
+
 def get_payment_start_context(user, order_id, data=None):
     order = get_object_or_404(Order, pk=order_id, user=user)
     form = PaymentStartForm(data=data)
-    if not settings.DEBUG:
+    if not test_gateway_enabled():
         form.fields['gateway'].choices = [
             choice
             for choice in Payment.Gateway.choices
@@ -39,10 +44,10 @@ def create_payment(user, order_id, gateway):
     valid_gateways = {choice[0] for choice in Payment.Gateway.choices}
     if gateway not in valid_gateways:
         raise PaymentError('روش پرداخت معتبر نیست.')
-    if gateway == Payment.Gateway.TEST and not settings.DEBUG:
+    if gateway == Payment.Gateway.TEST and not test_gateway_enabled():
         raise PaymentError('درگاه آزمایشی در محیط اصلی فعال نیست.')
 
-    with transaction.atomic():
+    with redis_lock(f'payment:create:{user.pk}:{order_id}'), transaction.atomic():
         order = get_object_or_404(
             Order.objects.select_for_update().prefetch_related('items'),
             pk=order_id,
@@ -125,7 +130,7 @@ def _mark_as_paid(payment, gateway_reference):
 
 
 def get_test_gateway_context(user, token):
-    if not settings.DEBUG:
+    if not test_gateway_enabled():
         raise PaymentError('درگاه آزمایشی غیرفعال است.')
     payment = get_object_or_404(
         Payment.objects.select_related('order'),
@@ -137,12 +142,17 @@ def get_test_gateway_context(user, token):
 
 
 def complete_test_payment(user, token, successful):
-    if not settings.DEBUG:
+    if not test_gateway_enabled():
         raise PaymentError('درگاه آزمایشی غیرفعال است.')
 
-    with transaction.atomic():
+    with redis_lock(f'payment:complete:{token}'), transaction.atomic():
+        # Always lock order before payment, as cancellation and wallet payment do.
+        order_id = get_object_or_404(
+            Payment, token=token, user=user, gateway=Payment.Gateway.TEST,
+        ).order_id
+        Order.objects.select_for_update().get(pk=order_id)
         payment = get_object_or_404(
-            Payment.objects.select_for_update().select_related('order'),
+            Payment.objects.select_for_update(),
             token=token,
             user=user,
             gateway=Payment.Gateway.TEST,
@@ -169,6 +179,7 @@ def complete_test_payment(user, token, successful):
 
 @transaction.atomic
 def refund_paid_order(order_id):
+    Order.objects.select_for_update().get(pk=order_id)
     payment = (
         Payment.objects.select_for_update()
         .filter(order_id=order_id, status=Payment.Status.PAID)

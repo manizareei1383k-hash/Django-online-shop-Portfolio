@@ -260,6 +260,7 @@ class AccountViewTests(TestCase):
                 'first_name': 'Updated',
                 'last_name': 'Person',
                 'email': 'updated@example.com',
+                'current_password': 'safe-password-123',
                 'phone_number': self.user.phone_number,
             },
         )

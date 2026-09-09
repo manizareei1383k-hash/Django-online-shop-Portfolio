@@ -20,7 +20,6 @@ from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('management-panel/', include('management_panel.urls')),
     path('account/', include('account.urls')),
     path('cart/', include('cart.urls')),
@@ -29,6 +28,9 @@ urlpatterns = [
     path('invoices/', include('invoices.urls')),
     path('', include('shop.urls')),
 ]
+
+if settings.ENABLE_DJANGO_ADMIN:
+    urlpatterns.insert(0, path('admin/', admin.site.urls))
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

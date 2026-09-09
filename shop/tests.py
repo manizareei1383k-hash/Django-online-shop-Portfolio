@@ -1,6 +1,8 @@
 from datetime import timedelta
 
 from django.core.exceptions import ValidationError
+from django.core.cache import cache
+from django.http import QueryDict
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -9,6 +11,7 @@ from account.models import User
 
 from .forms import ProductForm
 from .models import Category, Message, Product, ProductDiscount, Review
+from .selectors import get_product_detail_cache_key, get_shop_context
 
 
 class ShopViewTests(TestCase):
@@ -74,6 +77,38 @@ class ShopViewTests(TestCase):
         )
         review = Review.objects.get(email='customer@example.com')
         self.assertEqual(review.product, self.product)
+
+    def test_product_detail_cache_is_invalidated_after_review(self):
+        cache.clear()
+        product_url = reverse('shop:product_detail', args=[self.product.pk])
+        cache_key = get_product_detail_cache_key(self.product.pk)
+
+        response = self.client.get(product_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(cache.get(cache_key))
+
+        with self.captureOnCommitCallbacks(execute=True):
+            Review.objects.create(
+                product=self.product,
+                name='Customer',
+                email='customer@example.com',
+                review='A useful product',
+            )
+
+        self.assertIsNone(cache.get(cache_key))
+
+    def test_shop_list_uses_cache(self):
+        cache.clear()
+        params = QueryDict('')
+
+        first_context = get_shop_context(params)
+        self.assertEqual(len(first_context['page'].object_list), 1)
+
+        with self.assertNumQueries(0):
+            cached_context = get_shop_context(params)
+
+        self.assertEqual(len(cached_context['page'].object_list), 1)
 
     def test_anonymous_user_cannot_submit_review(self):
         product_url = reverse('shop:product_detail', args=[self.product.pk])

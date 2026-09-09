@@ -17,11 +17,23 @@ from .forms import (
     TicketMessageForm,
     UserProfileForm,
 )
-from .models import Address, Ticket, User, Wallet
+from .models import Address, Ticket, TicketMessage, User, Wallet
 
 
 RESET_SESSION_TOKEN = '_password_reset_token'
 RESET_URL_TOKEN = 'set-password'
+
+
+def get_ticket_attachment(user, name):
+    messages = TicketMessage.objects.exclude(attachment='')
+    if not (user.is_active and user.is_staff):
+        messages = messages.filter(ticket__user=user)
+    message = get_object_or_404(messages, attachment=name)
+    from django.http import Http404
+    try:
+        return message.attachment.open('rb')
+    except FileNotFoundError:
+        raise Http404
 
 
 def get_password_change_context(user, data=None):
@@ -36,11 +48,13 @@ def get_password_reset_context(request, data=None):
     form = AccountPasswordResetForm(data=data)
     email_sent = False
     if data is not None and form.is_valid():
-        form.save(
-            request=request,
-            use_https=request.is_secure(),
-            email_template_name='account/password_reset_email.txt',
-            subject_template_name='account/password_reset_subject.txt',
+        from .tasks import send_password_reset_email
+
+        send_password_reset_email.delay(
+            form.cleaned_data['email'],
+            form.cleaned_data['phone_number'],
+            request.get_host(),
+            request.is_secure(),
         )
         email_sent = True
     return {'form': form, 'email_sent': email_sent}

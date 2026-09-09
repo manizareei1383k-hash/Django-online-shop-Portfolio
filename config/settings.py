@@ -10,24 +10,35 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 import sys
 from decimal import Decimal
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
+
+from django.core.management.utils import get_random_secret_key
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+IS_TESTING = 'test' in sys.argv
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/1')
+
+
+def redis_database_url(url, database):
+    parts = urlsplit(url)
+    return urlunsplit(parts._replace(path=f'/{database}'))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-=x1$x13)a4%0zv2cr4#&0e16ize1xry*cbo7v=%5oqj1=7igk+'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY') or get_random_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() == 'true'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 
 
 # Application definition
@@ -40,7 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'account',
-    'shop',
+    'shop.apps.ShopConfig',
     'cart',
     'orders',
     'payments',
@@ -55,6 +66,7 @@ LOGIN_REDIRECT_URL = 'account:profile'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'config.middleware.RequestSecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -141,12 +153,72 @@ MEDIA_ROOT = BASE_DIR / 'media'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'no-reply@example.com'
 
+# Redis is shared by cache, sessions, rate limiting, Celery and short locks.
+# Unit tests remain isolated and don't require an external service.
+CACHES = {
+    'default': {
+        'BACKEND': (
+            'django.core.cache.backends.locmem.LocMemCache'
+            if IS_TESTING
+            else 'django_redis.cache.RedisCache'
+        ),
+        'LOCATION': 'shop-tests' if IS_TESTING else REDIS_URL,
+        'KEY_PREFIX': 'shop',
+        'TIMEOUT': 300,
+        'OPTIONS': {} if IS_TESTING else {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SOCKET_CONNECT_TIMEOUT': 2,
+            'SOCKET_TIMEOUT': 2,
+        },
+    },
+}
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_CACHE_ALIAS = 'default'
+
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', redis_database_url(REDIS_URL, 2))
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', redis_database_url(REDIS_URL, 3))
+CELERY_TASK_ALWAYS_EAGER = IS_TESTING
+CELERY_TASK_EAGER_PROPAGATES = IS_TESTING
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+
 
 # Five requests per route and per user/IP in each 60-second window.
 # The middleware has focused tests and is disabled during the unrelated test suite.
-RATE_LIMIT_ENABLED = 'test' not in sys.argv
+RATE_LIMIT_ENABLED = not IS_TESTING
 RATE_LIMIT_REQUESTS = 5
 RATE_LIMIT_WINDOW_SECONDS = 60
+RATE_LIMIT_GLOBAL_REQUESTS = 60
+ENABLE_TEST_GATEWAY = True  # Explicitly disabled in config.production.
+ENABLE_DJANGO_ADMIN = False  # The site uses /management-panel/.
+
+PRIVATE_MEDIA_ROOT = BASE_DIR / 'private_media'
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+MAX_REQUEST_BYTES = 6 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 256 * 1024
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 100
+DATA_UPLOAD_MAX_NUMBER_FILES = 3
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+FILE_UPLOAD_PERMISSIONS = 0o600
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o700
+FILE_UPLOAD_HANDLERS = [
+    'config.uploads.LimitedUploadHandler',
+    'django.core.files.uploadhandler.MemoryFileUploadHandler',
+    'django.core.files.uploadhandler.TemporaryFileUploadHandler',
+]
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_AGE = 60 * 60 * 12
+PASSWORD_RESET_TIMEOUT = 60 * 30
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'same-origin'
+X_FRAME_OPTIONS = 'DENY'
 
 # Tax applied to the products subtotal of newly created orders.
 TAX_PERCENT = Decimal('10.00')

@@ -4,6 +4,8 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models, transaction
+from django.utils import timezone
+from config.uploads import private_ticket_storage, ticket_upload_path
 
 from .managers import UserManager
 
@@ -135,7 +137,8 @@ class TicketMessage(models.Model):
     )
     message = models.TextField()
     attachment = models.FileField(
-        upload_to='account/tickets/',
+        upload_to=ticket_upload_path,
+        storage=private_ticket_storage,
         null=True,
         blank=True,
     )
@@ -211,6 +214,7 @@ class Wallet(models.Model):
             raise ValidationError('نوع تراکنش برای افزایش موجودی معتبر نیست.')
 
         with transaction.atomic():
+            Wallet.objects.select_for_update().get(pk=self.pk)
             existing = self._get_existing_transaction(
                 reference,
                 self.pk,
@@ -223,6 +227,7 @@ class Wallet(models.Model):
 
             Wallet.objects.filter(pk=self.pk).update(
                 balance=models.F('balance') + amount,
+                updated_at=timezone.now(),
             )
             self.refresh_from_db(fields=('balance', 'updated_at'))
             return WalletTransaction.objects.create(
@@ -246,6 +251,7 @@ class Wallet(models.Model):
             raise ValidationError('نوع تراکنش برای کاهش موجودی معتبر نیست.')
 
         with transaction.atomic():
+            Wallet.objects.select_for_update().get(pk=self.pk)
             existing = self._get_existing_transaction(
                 reference,
                 self.pk,
@@ -259,7 +265,7 @@ class Wallet(models.Model):
             updated = Wallet.objects.filter(
                 pk=self.pk,
                 balance__gte=amount,
-            ).update(balance=models.F('balance') - amount)
+            ).update(balance=models.F('balance') - amount, updated_at=timezone.now())
             if not updated:
                 raise ValidationError('موجودی کیف پول کافی نیست.')
 

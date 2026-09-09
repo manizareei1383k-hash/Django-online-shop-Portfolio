@@ -1,9 +1,14 @@
 .venv/
+.redis-installer/
+.redis-server/
+celery-worker*.log
+redis.local.log
 __pycache__/
 *.py[cod]
 
 *.sqlite3
 media/
+private_media/
 staticfiles/
 
 .env

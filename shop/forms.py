@@ -1,17 +1,18 @@
 from decimal import Decimal
 
 from django import forms
+from config.uploads import SafeImageFormMixin
 
 from .models import Category, Message, Product, ProductDiscount, Review
 
 
-class CategoryForm(forms.ModelForm):
+class CategoryForm(SafeImageFormMixin, forms.ModelForm):
     class Meta:
         model = Category
         fields = ('name', 'image')
 
 
-class ProductForm(forms.ModelForm):
+class ProductForm(SafeImageFormMixin, forms.ModelForm):
     name = forms.CharField(
         min_length=3,
         max_length=200,
@@ -42,6 +43,7 @@ class ProductForm(forms.ModelForm):
 
 
 class MessageForm(forms.ModelForm):
+    message = forms.CharField(max_length=10000)
     class Meta:
         model = Message
         fields = ('name', 'email', 'message')
@@ -53,6 +55,7 @@ class MessageForm(forms.ModelForm):
 
 
 class ReviewForm(forms.ModelForm):
+    review = forms.CharField(max_length=5000)
     class Meta:
         model = Review
         fields = ('name', 'email', 'review')
