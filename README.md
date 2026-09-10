@@ -5,10 +5,13 @@
 [![Tests](https://img.shields.io/badge/tests-145%20passed-brightgreen)](#quality-and-security)
 [![Redis](https://img.shields.io/badge/cache-Redis-DC382D?logo=redis&logoColor=white)](https://redis.io/)
 [![PostgreSQL](https://img.shields.io/badge/production-PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A reusable, security-focused Django backend for online shops. It includes the
 complete domain layer for products, carts, orders, payments, invoices, wallets,
 notifications, support tickets, and a custom staff management panel.
+
+Released under the [MIT License](LICENSE).
 
 > This repository focuses on backend behavior. It does not include a designed
 > frontend or a real payment gateway.
