@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AnonymousUser
 from django.core.cache import cache
 from django.http import HttpResponse
-from django.test import RequestFactory, SimpleTestCase, override_settings
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from unittest.mock import patch
 
 from account.models import User
@@ -79,3 +79,31 @@ class UserRateLimitMiddlewareTests(SimpleTestCase):
 
         self.assertTrue(all(response.status_code == 200 for response in responses[:5]))
         self.assertTrue(all(response.status_code == 429 for response in responses[5:]))
+
+    def test_health_checks_are_not_rate_limited(self):
+        responses = [self.make_request('/health/live/') for _ in range(10)]
+
+        self.assertTrue(all(response.status_code == 200 for response in responses))
+
+
+class ObservabilityTests(TestCase):
+    def test_live_health_check_and_request_id(self):
+        response = self.client.get('/health/live/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'status': 'ok'})
+        self.assertRegex(response.headers['X-Request-ID'], r'^[0-9a-f]{32}$')
+
+    def test_ready_health_check(self):
+        response = self.client.get('/health/ready/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'status': 'ok'})
+
+    @patch('config.health.cache.set', side_effect=ConnectionError)
+    def test_ready_health_check_reports_dependency_failure(self, mocked_set):
+        with self.assertLogs('shop.health', level='ERROR'):
+            response = self.client.get('/health/ready/')
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json(), {'status': 'unavailable'})

@@ -15,7 +15,7 @@ from payments.models import Payment
 from shop.models import Category, Product, ProductDiscount, Review, ReviewReply
 from shop.signals import invalidate_public_shop_cache
 
-from .models import AdminActivity
+from .models import AdminActivity, SystemLog
 from .forms import (
     CategoryForm,
     OrderStatusForm,
@@ -501,4 +501,27 @@ def get_admin_activities_context(params):
         'activities': activities[:200],
         'actions': AdminActivity.Action.choices,
         'selected_action': action,
+    }
+
+
+def get_system_logs_context(params):
+    level = params.get('level', '').strip().upper()
+    query = params.get('q', '').strip()
+    logs = SystemLog.objects.all()
+    if level in {'ERROR', 'CRITICAL'}:
+        logs = logs.filter(level=level)
+    else:
+        level = ''
+    if query:
+        logs = logs.filter(
+            Q(message__icontains=query)
+            | Q(logger_name__icontains=query)
+            | Q(path__icontains=query)
+            | Q(request_id__icontains=query)
+        )
+    return {
+        'system_logs': logs[:200],
+        'levels': ('ERROR', 'CRITICAL'),
+        'selected_level': level,
+        'query': query,
     }

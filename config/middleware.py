@@ -3,6 +3,7 @@ import ipaddress
 import logging
 import time
 import unicodedata
+import uuid
 
 from django.conf import settings
 from django.core.cache import cache
@@ -10,8 +11,46 @@ from django.http import HttpResponse
 from django.urls import Resolver404, resolve
 from django.utils.cache import patch_cache_control
 
+from .observability import bind_request_id, reset_request_id
+
 
 logger = logging.getLogger('django.security.rate_limit')
+request_logger = logging.getLogger('shop.request')
+
+
+class RequestLoggingMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        request_id = uuid.uuid4().hex
+        request.request_id = request_id
+        token = bind_request_id(request_id)
+        started_at = time.perf_counter()
+        try:
+            response = self.get_response(request)
+            duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
+            level = logging.ERROR if response.status_code >= 500 else logging.INFO
+            request_logger.log(
+                level,
+                'Request completed',
+                extra={
+                    'method': request.method,
+                    'path': request.path_info,
+                    'status_code': response.status_code,
+                    'duration_ms': duration_ms,
+                },
+            )
+            response.headers['X-Request-ID'] = request_id
+            return response
+        except Exception:
+            request_logger.exception(
+                'Unhandled request exception',
+                extra={'method': request.method, 'path': request.path_info},
+            )
+            raise
+        finally:
+            reset_request_id(token)
 
 
 class RequestSecurityMiddleware:
@@ -91,6 +130,8 @@ class UserRateLimitMiddleware:
             route = resolve(request.path_info).view_name
         except Resolver404:
             route = 'unmatched'
+        if route in settings.RATE_LIMIT_EXEMPT_VIEW_NAMES:
+            return self.get_response(request)
         raw_ip = request.META.get('REMOTE_ADDR', 'unknown')
         try:
             address = ipaddress.ip_address(raw_ip)

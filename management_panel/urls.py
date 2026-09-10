@@ -33,4 +33,5 @@ urlpatterns = [
     path('users/', views.user_list, name='users'),
     path('users/<int:pk>/', views.user_detail, name='user_detail'),
     path('activities/', views.activity_list, name='activities'),
+    path('system-logs/', views.system_log_list, name='system_logs'),
 ]

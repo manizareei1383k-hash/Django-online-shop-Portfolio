@@ -1,0 +1,36 @@
+{% extends 'management_panel/base.html' %}
+{% block management_content %}
+<section class="panel">
+    <h2>لاگ‌های خطای سیستم</h2>
+    <form method="get">
+        <input name="q" value="{{ query }}" placeholder="پیام، مسیر یا شناسه درخواست">
+        <select name="level">
+            <option value="">همه سطوح</option>
+            {% for level in levels %}
+                <option value="{{ level }}" {% if selected_level == level %}selected{% endif %}>{{ level }}</option>
+            {% endfor %}
+        </select>
+        <button>فیلتر</button>
+    </form>
+</section>
+<section class="panel table-wrap">
+    <table>
+        <thead><tr><th>زمان</th><th>سطح</th><th>بخش</th><th>مسیر</th><th>وضعیت</th><th>پیام</th><th>شناسه درخواست</th></tr></thead>
+        <tbody>
+        {% for log in system_logs %}
+            <tr>
+                <td>{{ log.created_at }}</td>
+                <td>{{ log.level }}</td>
+                <td>{{ log.logger_name }}</td>
+                <td>{{ log.method }} {{ log.path }}</td>
+                <td>{{ log.status_code|default:'-' }}</td>
+                <td title="{{ log.traceback }}">{{ log.message|truncatechars:120 }}</td>
+                <td>{{ log.request_id|default:'-' }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="7">خطایی ثبت نشده است.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

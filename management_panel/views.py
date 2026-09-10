@@ -267,3 +267,12 @@ def activity_list(request):
         'management_panel/activity_list.html',
         selectors.get_admin_activities_context(request.GET),
     )
+
+
+@admin_required
+def system_log_list(request):
+    return render(
+        request,
+        'management_panel/system_log_list.html',
+        selectors.get_system_logs_context(request.GET),
+    )

@@ -40,3 +40,21 @@ class AdminActivity(models.Model):
 
     def __str__(self):
         return f'{self.get_action_display()} {self.target_type} #{self.target_id}'
+
+
+class SystemLog(models.Model):
+    level = models.CharField(max_length=20, db_index=True, editable=False)
+    logger_name = models.CharField(max_length=150, editable=False)
+    message = models.TextField(editable=False)
+    request_id = models.CharField(max_length=32, blank=True, editable=False)
+    method = models.CharField(max_length=10, blank=True, editable=False)
+    path = models.CharField(max_length=500, blank=True, editable=False)
+    status_code = models.PositiveSmallIntegerField(null=True, editable=False)
+    traceback = models.TextField(blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True, editable=False)
+
+    class Meta:
+        ordering = ('-created_at', '-id')
+
+    def __str__(self):
+        return f'{self.level}: {self.message[:80]}'

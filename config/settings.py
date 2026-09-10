@@ -66,6 +66,7 @@ LOGIN_REDIRECT_URL = 'account:profile'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'config.middleware.RequestLoggingMiddleware',
     'config.middleware.RequestSecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -219,6 +220,53 @@ PASSWORD_RESET_TIMEOUT = 60 * 30
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'same-origin'
 X_FRAME_OPTIONS = 'DENY'
+
+RATE_LIMIT_EXEMPT_VIEW_NAMES = {'health_live', 'health_ready'}
+SYSTEM_LOG_RETENTION_DAYS = int(os.environ.get('SYSTEM_LOG_RETENTION_DAYS', '30'))
+
+LOG_LEVEL = os.environ.get(
+    'DJANGO_LOG_LEVEL',
+    'WARNING' if IS_TESTING else 'INFO',
+).upper()
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'request_id': {'()': 'config.observability.RequestIdFilter'},
+    },
+    'formatters': {
+        'json': {'()': 'config.observability.JsonFormatter'},
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'filters': ['request_id'],
+            'formatter': 'json',
+        },
+        'database_errors': {
+            'class': 'config.observability.DatabaseErrorHandler',
+            'level': 'ERROR',
+            'filters': ['request_id'],
+        },
+    },
+    'root': {'handlers': ['console'], 'level': LOG_LEVEL},
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'database_errors'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+        'shop': {
+            'handlers': ['console', 'database_errors'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+    },
+}
+
+from .observability import configure_sentry
+
+SENTRY_ENABLED = configure_sentry() if not IS_TESTING else False
 
 # Tax applied to the products subtotal of newly created orders.
 TAX_PERCENT = Decimal('10.00')

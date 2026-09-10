@@ -1,4 +1,5 @@
 from datetime import timedelta
+import logging
 
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -8,7 +9,8 @@ from django.utils import timezone
 
 from account.models import Address, Ticket, User, Wallet
 from invoices.models import Invoice
-from management_panel.models import AdminActivity
+from management_panel.models import AdminActivity, SystemLog
+from config.observability import DatabaseErrorHandler
 from notifications.models import Notification
 from orders.models import Order, OrderItem, ShippingMethod
 from payments import selectors as payment_selectors
@@ -65,6 +67,28 @@ class ManagementPanelTests(TestCase):
 
         self.assertEqual(cached_stats, first_stats)
 
+    def test_error_log_is_saved_and_shown_on_system_logs_page(self):
+        record = logging.LogRecord(
+            'shop.test',
+            logging.ERROR,
+            __file__,
+            1,
+            'Test dashboard error',
+            (),
+            None,
+        )
+        record.request_id = 'a' * 32
+        record.method = 'GET'
+        record.path = '/broken/'
+        record.status_code = 500
+        DatabaseErrorHandler().emit(record)
+
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse('management_panel:system_logs'))
+
+        self.assertEqual(SystemLog.objects.count(), 1)
+        self.assertContains(response, 'Test dashboard error')
+
     def test_panel_requires_staff_access(self):
         panel_urls = (
             reverse('management_panel:dashboard'),
@@ -78,6 +102,7 @@ class ManagementPanelTests(TestCase):
             reverse('management_panel:invoices'),
             reverse('management_panel:users'),
             reverse('management_panel:activities'),
+            reverse('management_panel:system_logs'),
         )
         for url in panel_urls:
             with self.subTest(url=url):
@@ -104,6 +129,7 @@ class ManagementPanelTests(TestCase):
             reverse('management_panel:invoices'),
             reverse('management_panel:users'),
             reverse('management_panel:activities'),
+            reverse('management_panel:system_logs'),
         )
         for url in urls:
             with self.subTest(url=url):
