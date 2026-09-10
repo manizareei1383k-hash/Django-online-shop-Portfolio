@@ -81,7 +81,7 @@ The test gateway has a separate disable switch and is always off in production.
 
 ## Verification and remaining work
 
-Verified on 2026-09-09: all 135 tests passed on local SQLite, including 24 added
+Verified on 2026-09-10: all 145 tests passed on local SQLite, including focused
 security regression tests. The production deployment check passed without warnings
 using isolated example environment values (no live service connectivity tested).
 Migration 0006 was applied locally; no model changes remain without migrations.

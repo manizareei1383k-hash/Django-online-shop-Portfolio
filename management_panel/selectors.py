@@ -16,6 +16,7 @@ from shop.models import Category, Product, ProductDiscount, Review, ReviewReply
 from shop.signals import invalidate_public_shop_cache
 
 from .models import AdminActivity, SystemLog
+from .cache import DASHBOARD_STATS_CACHE_KEY, DASHBOARD_STATS_CACHE_TIMEOUT
 from .forms import (
     CategoryForm,
     OrderStatusForm,
@@ -25,10 +26,6 @@ from .forms import (
     TicketManagementForm,
     TicketMessageForm,
 )
-
-
-MANAGEMENT_DASHBOARD_STATS_CACHE_KEY = 'management_panel:dashboard:stats'
-MANAGEMENT_DASHBOARD_STATS_CACHE_TIMEOUT = 30
 
 
 def record_admin_activity(
@@ -54,7 +51,7 @@ def record_admin_activity(
 
 def get_dashboard_stats(use_cache=True):
     stats = (
-        cache.get(MANAGEMENT_DASHBOARD_STATS_CACHE_KEY)
+        cache.get(DASHBOARD_STATS_CACHE_KEY)
         if use_cache
         else None
     )
@@ -79,9 +76,9 @@ def get_dashboard_stats(use_cache=True):
     }
     if use_cache:
         cache.set(
-            MANAGEMENT_DASHBOARD_STATS_CACHE_KEY,
+            DASHBOARD_STATS_CACHE_KEY,
             stats,
-            MANAGEMENT_DASHBOARD_STATS_CACHE_TIMEOUT,
+            DASHBOARD_STATS_CACHE_TIMEOUT,
         )
     return stats
 
@@ -127,6 +124,8 @@ def get_product_form_context(
     if data is not None and form.is_valid():
         try:
             with transaction.atomic():
+                if product is not None:
+                    Product.objects.select_for_update().get(pk=product.pk)
                 product = form.save()
                 if form.cleaned_data.get('remove_discount'):
                     product.discounts.filter(is_active=True).update(is_active=False)

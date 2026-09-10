@@ -1,14 +1,10 @@
 {% extends 'shop/base.html' %}
-{% load static %}
-
 {% block title %}فاکتور {{ invoice.number }}{% endblock %}
 
 {% block content %}
 <section class="panel">
     <div class="actions">
         <h1>فاکتور {{ invoice.number }}</h1>
-        <button type="button" id="print-invoice">چاپ فاکتور</button>
-        <script src="{% static 'invoices/print.js' %}" defer></script>
     </div>
     <p>وضعیت: <strong>{{ invoice.get_status_display }}</strong></p>
     <p>تاریخ صدور: {{ invoice.issued_at }}</p>

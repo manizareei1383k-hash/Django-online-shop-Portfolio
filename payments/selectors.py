@@ -227,7 +227,12 @@ def refund_paid_order(order_id):
 
 
 def cancel_pending_order_payments(order_id):
-    return Payment.objects.filter(
+    updated = Payment.objects.filter(
         order_id=order_id,
         status=Payment.Status.PENDING,
     ).update(status=Payment.Status.CANCELED, updated_at=timezone.now())
+    if updated:
+        from management_panel.cache import invalidate_dashboard_stats_cache
+
+        invalidate_dashboard_stats_cache()
+    return updated

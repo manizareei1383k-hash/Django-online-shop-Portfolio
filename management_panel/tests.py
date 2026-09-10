@@ -18,6 +18,7 @@ from payments.models import Payment
 from shop.models import Category, Product, ProductDiscount, Review, ReviewReply
 
 from . import selectors
+from .cache import DASHBOARD_STATS_CACHE_KEY
 
 
 class ManagementPanelTests(TestCase):
@@ -66,6 +67,27 @@ class ManagementPanelTests(TestCase):
             cached_stats = selectors.get_dashboard_stats()
 
         self.assertEqual(cached_stats, first_stats)
+
+    def test_dashboard_cache_is_invalidated_after_related_change(self):
+        cache.clear()
+        old_stats = selectors.get_dashboard_stats()
+        self.assertIsNotNone(cache.get(DASHBOARD_STATS_CACHE_KEY))
+
+        with self.captureOnCommitCallbacks(execute=True):
+            Product.objects.create(
+                name='Second product',
+                price='50.00',
+                status='available',
+                quantity=1,
+                category=self.category,
+            )
+
+        self.assertIsNone(cache.get(DASHBOARD_STATS_CACHE_KEY))
+        new_stats = selectors.get_dashboard_stats()
+        self.assertEqual(
+            new_stats['products_count'],
+            old_stats['products_count'] + 1,
+        )
 
     def test_error_log_is_saved_and_shown_on_system_logs_page(self):
         record = logging.LogRecord(

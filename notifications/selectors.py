@@ -60,10 +60,15 @@ def mark_notification_as_read(user, notification_id):
 
 
 def mark_all_notifications_as_read(user):
-    return user.notifications.filter(is_read=False).update(
+    updated = user.notifications.filter(is_read=False).update(
         is_read=True,
         read_at=timezone.now(),
     )
+    if updated:
+        from management_panel.cache import invalidate_dashboard_stats_cache
+
+        invalidate_dashboard_stats_cache()
+    return updated
 
 
 def notify_payment_success(payment):

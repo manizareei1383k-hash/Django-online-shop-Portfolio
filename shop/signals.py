@@ -18,7 +18,7 @@ def invalidate_product_detail_cache(product_id=None):
         else:
             cache.clear()
 
-    transaction.on_commit(delete_cache)
+    transaction.on_commit(delete_cache, robust=True)
 
 
 @receiver([post_save, post_delete], sender=Category)
@@ -32,7 +32,7 @@ def invalidate_public_shop_cache(**kwargs):
         else:
             cache.clear()
 
-    transaction.on_commit(delete_public_cache)
+    transaction.on_commit(delete_public_cache, robust=True)
     invalidate_product_detail_cache()
 
 
